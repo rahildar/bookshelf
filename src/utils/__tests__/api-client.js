@@ -4,7 +4,7 @@ import {server, rest} from 'test/server'
 import {client, apiURL} from '../api-client'
 
 jest.mock('react-query')
-jest.mock('auth-provider')
+jest.mock('auth-provider', () => jest.createMockFromModule('auth-provider'))
 
 test('calls fetch at the endpoint with the arguments for GET requests', async () => {
   const endpoint = 'test-endpoint'
