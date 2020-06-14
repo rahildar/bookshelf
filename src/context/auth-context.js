@@ -2,21 +2,20 @@
 import {jsx} from '@emotion/core'
 
 import React from 'react'
-import {queryCache} from 'react-query'
 import * as auth from 'auth-provider'
 import {client} from 'utils/api-client'
 import {useAsync} from 'utils/hooks'
 import {FullPageSpinner, FullPageErrorFallback} from 'components/lib'
 
-async function bootstrapAppData() {
+async function getUser() {
   let user = null
 
   const token = await auth.getToken()
   if (token) {
-    const data = await client('bootstrap', {token})
-    queryCache.setQueryData('list-items', data.listItems)
+    const data = await client('me', {token})
     user = data.user
   }
+
   return user
 }
 
@@ -26,7 +25,6 @@ AuthContext.displayName = 'AuthContext'
 function AuthProvider(props) {
   const {
     data: user,
-    status,
     error,
     isLoading,
     isIdle,
@@ -34,32 +32,19 @@ function AuthProvider(props) {
     isSuccess,
     run,
     setData,
+    status,
   } = useAsync()
 
   React.useEffect(() => {
-    const appDataPromise = bootstrapAppData()
-    run(appDataPromise)
+    run(getUser())
   }, [run])
 
-  const login = React.useCallback(
-    form => auth.login(form).then(user => setData(user)),
-    [setData],
-  )
-  const register = React.useCallback(
-    form => auth.register(form).then(user => setData(user)),
-    [setData],
-  )
-  const logout = React.useCallback(() => {
+  const login = form => auth.login(form).then(user => setData(user))
+  const register = form => auth.register(form).then(user => setData(user))
+  const logout = () => {
     auth.logout()
     setData(null)
-  }, [setData])
-
-  const value = React.useMemo(() => ({user, login, logout, register}), [
-    login,
-    logout,
-    register,
-    user,
-  ])
+  }
 
   if (isLoading || isIdle) {
     return <FullPageSpinner />
@@ -70,6 +55,7 @@ function AuthProvider(props) {
   }
 
   if (isSuccess) {
+    const value = {user, login, register, logout}
     return <AuthContext.Provider value={value} {...props} />
   }
 
@@ -85,8 +71,9 @@ function useAuth() {
 }
 
 function useClient() {
-  const {user} = useAuth()
-  const token = user?.token
+  const {
+    user: {token},
+  } = useAuth()
   return React.useCallback(
     (endpoint, config) => client(endpoint, {...config, token}),
     [token],
