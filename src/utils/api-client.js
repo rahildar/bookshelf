@@ -1,5 +1,5 @@
-import {queryCache} from 'react-query'
-import * as auth from 'auth-provider'
+const localStorageKey = '__bookshelf_token__'
+
 const apiURL = process.env.REACT_APP_API_URL
 
 async function client(
@@ -33,9 +33,8 @@ async function client(
   })
 }
 
-async function logout() {
-  queryCache.clear()
-  await auth.logout()
+function logout() {
+  window.localStorage.removeItem(localStorageKey)
 }
 
 export {client, logout, apiURL}
